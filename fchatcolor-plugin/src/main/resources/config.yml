@@ -1,0 +1,50 @@
+# =====================================================================
+#  FChatColor - Main configuration
+# =====================================================================
+# Chat behaviour is fixed (not configurable):
+#   * Color codes are written with '&' (&a, &#FF55FF, <blue>).
+#   * Codes typed by the player are always translated.
+#   * The color chosen with /fchatcolor set always applies to their messages.
+# Messages are edited in messages.yml.
+
+chat:
+  # Modes enabled to pick a color with /fchatcolor set.
+  # The player also needs the matching permission and the server
+  # must support it.
+  modes:
+    legacy: true
+    hex: true
+    minimessage: true
+
+database:
+  # SQLITE (local file, nothing to install) or MYSQL (MySQL/MariaDB server)
+  type: SQLITE
+
+  # Repeated chat lookups are cached in memory for this time (ms).
+  # Set 0 to disable the cache (more database queries).
+  # Tuned for large servers (1000+ players): higher values reduce DB hits
+  # without stale data risk because the cache is invalidated on every write.
+  cache-millis: 60000
+
+  # Number of simultaneous JDBC connections (2-32 recommended).
+  # Tuned for large servers: 10 handles burst chat + menu + commands
+  # without exhausting the pool. Lower values (4) are fine for small servers.
+  pool-size: 10
+
+  # Table name (created automatically)
+  table: fchatcolor_colors
+
+  # --- SQLite ---
+  sqlite:
+    # Path relative to the plugin folder. Use ":memory:" to test.
+    file: data.db
+
+  # --- MySQL / MariaDB ---
+  mysql:
+    host: localhost
+    port: 3306
+    database: fchatcolor
+    username: root
+    password: ''
+    # Extra JDBC properties separated by ';', e.g. "useSSL=false;allowPublicKeyRetrieval=true"
+    properties: ''

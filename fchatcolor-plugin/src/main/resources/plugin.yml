@@ -1,0 +1,42 @@
+name: FChatColor
+version: '${project.version}'
+main: io.github.fchatcolor.FChatColorPlugin
+api-version: 1.13
+folia-supported: true
+description: Change the player's chat color.
+author: Fresa Network
+softdepend: [PlaceholderAPI]
+
+commands:
+  fchatcolor:
+    description: Manage your chat color.
+    aliases: [fcolor, fc, chatcolor]
+    usage: /fchatcolor <set|clear|reload|help>
+
+permissions:
+  fchatcolor.chat.use:
+    description: See color codes translated in chat.
+    default: true
+  fchatcolor.chat.hex:
+    description: Use and pick hex colors (#RRGGBB).
+    default: op
+  fchatcolor.chat.minimessage:
+    description: Use MiniMessage tags in chat.
+    default: op
+  fchatcolor.command.color:
+    description: Use /fchatcolor set and /fchatcolor clear.
+    default: true
+  fchatcolor.admin:
+    description: Reload the configuration and set colors of other players.
+    default: op
+  fchatcolor.*:
+    description: Grants every FChatColor permission.
+    default: op
+    children:
+      fchatcolor.chat.use: true
+      fchatcolor.chat.hex: true
+      fchatcolor.chat.minimessage: true
+      fchatcolor.command.color: true
+      fchatcolor.admin: true
+# Per-color permissions (fchatcolor.color.red, fchatcolor.color.blue, ...)
+# are registered automatically from colors.yml with default "op".

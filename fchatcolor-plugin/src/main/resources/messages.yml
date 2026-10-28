@@ -1,0 +1,45 @@
+# =====================================================================
+#  FChatColor - Messages (messages.yml)
+# =====================================================================
+# Every message of the plugin lives here. Use & color codes:
+#   &a  &7  &#FF5555  and MiniMessage tags <blue> (depending on server)
+#
+# Two formats are supported, pick whichever you like per message:
+#
+#   1) Single line:
+#        my-message: 'one line of text'
+#
+#   2) Multiple lines (one entry per line, sent one per line):
+#        my-message:
+#          - 'first line'
+#          - 'second line'
+#          - 'third line'
+#
+# {prefix} expands to the "prefix" message below. Delete {prefix} from any
+# message to remove the plugin prefix from that message only.
+
+prefix: '&8[&bFChatColor&8] &r'
+no-permission: "{prefix}&cYou don't have permission to do that."
+player-only: '{prefix}&cThis command can only be used in game.'
+unknown-command: '{prefix}&cUnknown subcommand. Use &f/fchatcolor help&c.'
+
+# Multi-line example (list format)
+usage:
+  - '{prefix}&e/fchatcolor set <color> &7- choose your chat color'
+  - '&e/fchatcolor clear &7- remove your color'
+  - '&e/fchatcolor set <player> <color> &7- (console) set the color of a player'
+  - '&e/fchatcolor reload &7- reload the configuration'
+
+# {color} = the color's NAME painted in that color (a visible preview)
+# {name}  = the color's name, plain | {value} = stored value | {player} = target (console)
+color-set: '{prefix}&aChat color updated: {color}&r &7({value})'
+color-set-other: '{prefix}&aSet the chat color of {player}: {color}&r &7({value})'
+color-cleared: '{prefix}&aYour chat color has been removed; the server default will be used.'
+color-cleared-other: '{prefix}&aRemoved the chat color of {player}.'
+color-invalid: '{prefix}&cInvalid color. Examples: &f#FF5555&c, &f&9&c or a name from colors.yml.'
+no-color-permission: "{prefix}&cYou don't have permission to use the color {color}."
+player-not-found: '{prefix}&cPlayer &f{player} &cwas not found online.'
+mode-disabled: '{prefix}&cThat color mode is disabled on this server.'
+storage-error: '{prefix}&cCould not save the color. Try again in a few seconds.'
+reload-done: '{prefix}&aConfiguration, messages, colors and services reloaded successfully.'
+no-storage: '{prefix}&cThe database is not available right now.'

@@ -1,0 +1,82 @@
+# =====================================================================
+#  FChatColor - ChatColor Menu Configuration
+# =====================================================================
+# Menu opened with /chatcolor (no arguments) and /fchatcolor menu.
+#
+#   title:   inventory title. Supports the %page% and %maxpage% placeholders
+#            and MiniMessage tags (<dark_gray>) or & codes.
+#   size:    inventory size (multiple of 9, max 54).
+#   colors-slots: slots reserved for the colors, written as ranges
+#            separated by ';'. Every listed slot is filled left-to-right,
+#            top-to-bottom, one page at a time.
+#
+#   fill:    optional background item placed on every slot that is NOT a
+#            color slot and NOT a button.
+#
+#   item-format: how each color is rendered. The placeholders {color_name},
+#            {color_material} and {permission} are replaced per color.
+#              select        -> a color the player may pick (click = select)
+#              unselect      -> the player's CURRENT color, click = remove it
+#              selected      -> the player's current color but they cannot
+#                               change it anymore (shown, no action)
+#              no_permission -> the player lacks the color permission (no action)
+#            material defaults to {color_material}: every color shows the
+#            material configured for it in colors.yml (PLAYER_HEAD with its
+#            texture, unless the color says otherwise). Write any Bukkit
+#            material to force one for that format.
+#
+#   buttons: fixed controls (close / previous-page / next-page).
+
+title: "<dark_gray>ChatColor (Page %page%/%maxpage%)"
+size: 54
+
+colors-slots: 0-8;9-17;18-26;27-35;36-44
+
+fill:
+  enabled: false
+  material: GRAY_STAINED_GLASS_PANE
+  name: " "
+
+item-format:
+  select:
+    name: "{color_name}"
+    material: "{color_material}"
+    lore:
+      - '&aClick to select!'
+  selected:
+    name: "{color_name}"
+    material: "{color_material}"
+    lore:
+      - '&cYou have already selected this color!'
+  unselect:
+    name: "{color_name}"
+    material: "{color_material}"
+    lore:
+      - '&cClick to remove your chat color!'
+  no_permission:
+    name: "{color_name}"
+    material: "{color_material}"
+    lore:
+      - '&cYou need the {permission} permission to select the color!'
+
+buttons:
+  close:
+    enabled: true
+    material: RED_BED
+    name: "&cClose"
+    slot: 49
+    action: "close"
+
+  previous-page:
+    enabled: true
+    material: ARROW
+    name: "&aBack"
+    slot: 45
+    action: "prev"
+
+  next-page:
+    enabled: true
+    material: ARROW
+    name: "&aNext"
+    slot: 53
+    action: "next"
