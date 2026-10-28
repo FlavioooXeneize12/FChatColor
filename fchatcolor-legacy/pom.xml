@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.fchatcolor</groupId>
+        <artifactId>fchatcolor-parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>fchatcolor-legacy</artifactId>
+    <name>FChatColor-Legacy</name>
+    <description>
+        Implementacion legacy (1.8+): colores &amp;a / &amp;#RRGGBB, eventos AsyncPlayerChatEvent
+        y schedulers de Bukkit clasico. Solo usa clases presentes desde Spigot 1.8.8.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.fchatcolor</groupId>
+            <artifactId>fchatcolor-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+        </dependency>
+    </dependencies>
+</project>
