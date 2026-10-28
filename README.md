@@ -15,14 +15,14 @@ numeración por años (26.x)**, con soporte de **MySQL/SQLite**, **hex colors**,
 | **1.8 / 1.21.x / 26.x** | Un solo jar. Detección de versión por **reflection** + dispatch de módulos |
 | **Folia / Canvas** | `folia-supported: true`, schedulers regionizados y listeners compatibles con multi-región |
 
-## Arquitectura multi-módulo (Maven)
+## Arquitectura multi-módulo (Gradle Kotlin DSL)
 
 ```
-fchatcolor-parent (pom)
+FChatColor-Parent
 ├── fchatcolor-api      Interfaces + ServerDetector (reflection) + utilidades
-├── fchatcolor-legacy   Servicio, scheduler y listener para servidores 1.8+
-├── fchatcolor-modern   Servicio, scheduler y listener para Paper 1.20.5+/1.21.x/26.x/Folia
-└── fchatcolor-plugin   Plugin principal, comando, config, JDBC (MySQL/SQLite) → jar final
+├── fchatcolor-legacy   Servicio, scheduler y listener para servidores 1.8+ (Java 8)
+├── fchatcolor-modern   Servicio, scheduler y listener para Paper 1.20.5+/1.21.x/26.x/Folia (Java 21)
+└── fchatcolor-plugin   Plugin principal, comando, config, JDBC (MySQL/SQLite) → jar final (shadowJar)
 ```
 
 **Clave de la compatibilidad:** `ServiceLocator` jamás referencia `LegacyServices`
@@ -51,17 +51,18 @@ reales detectadas.
 
 ## Compilación
 
-Requisitos: **JDK 21 o superior** para compilar (paper-api 1.21 lo exige),
-Maven 3.8+.
+Requisitos: **JDK 17** para ejecutar Gradle 8.14 (Gradle descarga toolchain **Java 21** automáticamente para `fchatcolor-modern`).
 
 ```bash
-mvn clean package
+# JDK 17 requerido para Gradle 8.14 (JDK 25 no es parseado por Kotlin 1.9)
+./gradlew clean build
+# o en Windows
+gradlew.bat clean build
 ```
 
-El jar final queda en `fchatcolor-plugin/target/FChatColor-1.0.0.jar`.
+El jar final queda en `fchatcolor-plugin/build/libs/FChatColor-1.0.0.jar`.
 
-> El resultado sigue siendo **Java 8** en bytecode: funciona en servidores 1.8
-> que corren Java 8.
+> **Compatibilidad 1.8 → 26.x garantizada:** `fchatcolor-api`/`legacy`/`plugin` compilan con `--release 8` (bytecode Java 8) y `fchatcolor-modern` con `--release 21` para `paper-api:1.21.4`. `ServiceLocator` carga `LegacyServices`/`ModernServices` vía `Class.forName` — en 1.8 nunca se toca una clase de Paper 1.21.
 
 ## Instalación
 
