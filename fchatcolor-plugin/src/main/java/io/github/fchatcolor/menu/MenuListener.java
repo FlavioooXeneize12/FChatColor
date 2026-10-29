@@ -6,6 +6,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -16,18 +17,18 @@ public final class MenuListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
+        HumanEntity clicker = event.getWhoClicked();
         Inventory top = getTopInventory(event);
-        ChatColorMenu menu = menuOf(top);
+        ChatColorMenu menu = menuOf(top, clicker);
         if (menu == null) {
             return;
         }
         event.setCancelled(true);
-        HumanEntity clicker = event.getWhoClicked();
         if (!(clicker instanceof Player)) {
             return;
         }
-        Inventory clicked = event.getClickedInventory();
-        if (clicked == null || !clicked.equals(top)) {
+        // Only handle clicks inside the top inventory
+        if (top != null && event.getRawSlot() >= top.getSize()) {
             return;
         }
         int slot = event.getRawSlot();
@@ -51,12 +52,13 @@ public final class MenuListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onInventoryDrag(InventoryDragEvent event) {
+        HumanEntity clicker = event.getWhoClicked();
         Inventory top = getTopInventory(event);
-        ChatColorMenu menu = menuOf(top);
+        ChatColorMenu menu = menuOf(top, clicker);
         if (menu == null) {
             return;
         }
-        int topSize = getTopSize(event, top);
+        int topSize = top != null ? top.getSize() : getTopSize(event, top);
         for (Integer raw : event.getRawSlots()) {
             if (raw == null || raw >= topSize) continue;
             event.setCancelled(true);
@@ -64,10 +66,31 @@ public final class MenuListener implements Listener {
         }
     }
 
-    private static ChatColorMenu menuOf(Inventory inventory) {
-        if (inventory == null) {
-            return null;
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        HumanEntity human = event.getPlayer();
+        if (human instanceof Player) {
+            ChatColorMenu.closeMenu((Player) human);
         }
+    }
+
+    private static ChatColorMenu menuOf(Inventory inventory, HumanEntity clicker) {
+        if (inventory != null) {
+            InventoryHolder holder = inventory.getHolder();
+            if (holder instanceof ChatColorMenu) {
+                return (ChatColorMenu) holder;
+            }
+        }
+        // Fallback: track via OPEN_MENUS map (Paper 26.2 holder may be wrapped/null)
+        if (clicker instanceof Player) {
+            ChatColorMenu open = ChatColorMenu.getOpenMenu((Player) clicker);
+            if (open != null) return open;
+        }
+        return null;
+    }
+
+    private static ChatColorMenu menuOf(Inventory inventory) {
+        if (inventory == null) return null;
         InventoryHolder holder = inventory.getHolder();
         return holder instanceof ChatColorMenu ? (ChatColorMenu) holder : null;
     }
@@ -77,7 +100,6 @@ public final class MenuListener implements Listener {
     }
 
     // Reflective helpers to handle InventoryView being a class (1.8) vs interface (1.14+ / Paper 26.2)
-    // Compiling against 1.8 generates INVOKEVIRTUAL; on Paper it must be INVOKEINTERFACE -> IncompatibleClassChangeError
     private static Inventory getTopInventory(Object event) {
         try {
             Method getView = event.getClass().getMethod("getView");

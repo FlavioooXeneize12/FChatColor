@@ -42,6 +42,7 @@ public final class ChatColorMenu
 implements InventoryHolder {
     private static final String RESET = "\u00a7r";
     private static final Pattern MINIMESSAGE_TAG = Pattern.compile("<[^<>]*>");
+    private static final Map<UUID, ChatColorMenu> OPEN_MENUS = new java.util.concurrent.ConcurrentHashMap<UUID, ChatColorMenu>();
     private final FChatColorPlugin plugin;
     private final Messages messages;
     private MenuConfig config;
@@ -49,6 +50,27 @@ implements InventoryHolder {
     private int page;
     private Player viewer;
     private final Map<Integer, ColorCatalog.Entry> slotToColor = new HashMap<Integer, ColorCatalog.Entry>();
+
+    public static ChatColorMenu getOpenMenu(Player player) {
+        if (player == null) return null;
+        return OPEN_MENUS.get(player.getUniqueId());
+    }
+
+    public static ChatColorMenu getOpenMenu(UUID id) {
+        if (id == null) return null;
+        return OPEN_MENUS.get(id);
+    }
+
+    public static void setOpenMenu(Player player, ChatColorMenu menu) {
+        if (player == null) return;
+        if (menu == null) OPEN_MENUS.remove(player.getUniqueId());
+        else OPEN_MENUS.put(player.getUniqueId(), menu);
+    }
+
+    public static void closeMenu(Player player) {
+        if (player == null) return;
+        OPEN_MENUS.remove(player.getUniqueId());
+    }
 
     public ChatColorMenu(FChatColorPlugin plugin) {
         this.plugin = plugin;
@@ -89,6 +111,7 @@ implements InventoryHolder {
         this.renderColors(all, perPage);
         this.renderButtons(maxPage);
         player.openInventory(this.inventory);
+        OPEN_MENUS.put(player.getUniqueId(), this);
     }
 
     static int totalPages(int colorCount, int perPage) {
@@ -339,13 +362,10 @@ implements InventoryHolder {
                                 return;
                             }
                             try {
-                                Inventory top = null;
-                                try {
-                                    top = getTopInventoryReflective(player);
-                                } catch (Throwable ignored) {
-                                }
-                                if (top != null && top.getHolder() == ChatColorMenu.this) {
+                                ChatColorMenu open = ChatColorMenu.getOpenMenu(player);
+                                if (open == ChatColorMenu.this) {
                                     player.closeInventory();
+                                    ChatColorMenu.closeMenu(player);
                                 }
                             } catch (Throwable ignored) {
                             }
@@ -403,13 +423,10 @@ implements InventoryHolder {
                                 return;
                             }
                             try {
-                                Inventory top = null;
-                                try {
-                                    top = getTopInventoryReflective(player);
-                                } catch (Throwable ignored) {
-                                }
-                                if (top != null && top.getHolder() == ChatColorMenu.this) {
+                                ChatColorMenu open = ChatColorMenu.getOpenMenu(player);
+                                if (open == ChatColorMenu.this) {
                                     player.closeInventory();
+                                    ChatColorMenu.closeMenu(player);
                                 }
                             } catch (Throwable ignored) {
                             }
