@@ -17,4 +17,7 @@ public interface PluginSettings {
 
     /** Cadena en milisegundos que un color guardado vive en caché antes de re-consultar la BD. */
     long getCacheMillis();
+
+    /** Whether the /chatcolor GUI menu is enabled. */
+    boolean isMenuEnabled();
 }

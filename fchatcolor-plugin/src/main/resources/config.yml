@@ -7,6 +7,11 @@
 #   * The color chosen with /fchatcolor set always applies to their messages.
 # Messages are edited in messages.yml.
 
+menu:
+  # Whether the /chatcolor GUI menu is enabled.
+  # When false, /chatcolor and /fchatcolor menu will show a message instead of opening the inventory.
+  enabled: true
+
 chat:
   # Modes enabled to pick a color with /fchatcolor set.
   # The player also needs the matching permission and the server

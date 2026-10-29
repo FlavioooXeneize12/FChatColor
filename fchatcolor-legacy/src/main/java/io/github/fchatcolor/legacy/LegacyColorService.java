@@ -33,6 +33,7 @@ public final class LegacyColorService implements ColorService {
     private final PluginContext context;
     private final boolean hexCapable;
     private final Pattern hexPattern;
+    private final Pattern bareHexPattern;
     private final Pattern tagPattern;
     private final Map<String, String> miniTagToLegacy;
 
@@ -43,6 +44,7 @@ public final class LegacyColorService implements ColorService {
         char character = ChatDefaults.COLOR_CHARACTER;
         String quoted = Pattern.quote(String.valueOf(character));
         this.hexPattern = Pattern.compile("(?i)" + quoted + "#([0-9a-f]{6})");
+        this.bareHexPattern = Pattern.compile("(?i)(?<!" + quoted + ")#([0-9a-f]{6})\\b");
         this.tagPattern = Pattern.compile("</?([a-zA-Z0-9_#][a-zA-Z0-9_:#-]*)>");
         this.miniTagToLegacy = buildMiniTagMap();
     }
@@ -87,10 +89,14 @@ public final class LegacyColorService implements ColorService {
     }
 
     /**
-     * Sustituye {@code &#RRGGBB} por su version hex si el servidor la soporta,
+     * Sustituye {@code &#RRGGBB} y {@code #RRGGBB} por su version hex si el servidor la soporta,
      * o por el color legacy más cercano si no (1.8/1.12/1.15...).
      */
     private String translateHex(String input) {
+        // Normalize bare #RRGGBB to &#RRGGBB so the main pattern handles both
+        if (input.indexOf('#') >= 0) {
+            input = bareHexPattern.matcher(input).replaceAll("&#$1");
+        }
         Matcher matcher = hexPattern.matcher(input);
         if (!matcher.find()) {
             return input;

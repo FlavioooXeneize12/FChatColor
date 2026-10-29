@@ -81,6 +81,9 @@ TabCompleter {
     }
 
     private void openMenu(Player player) {
+        if (!this.plugin.getPluginSettings().isMenuEnabled()) {
+            return;
+        }
         if (!this.senderHasColorPermission((CommandSender)player)) {
             this.messages.send((CommandSender)player, "no-permission", new String[0]);
             return;

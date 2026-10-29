@@ -1,21 +1,5 @@
-/*
- * Decompiled with CFR 0.152.
- * 
- * Could not load the following classes:
- *  org.bukkit.entity.HumanEntity
- *  org.bukkit.entity.Player
- *  org.bukkit.event.EventHandler
- *  org.bukkit.event.EventPriority
- *  org.bukkit.event.Listener
- *  org.bukkit.event.inventory.InventoryClickEvent
- *  org.bukkit.event.inventory.InventoryDragEvent
- *  org.bukkit.inventory.Inventory
- *  org.bukkit.inventory.InventoryHolder
- */
 package io.github.fchatcolor.menu;
 
-import io.github.fchatcolor.menu.ChatColorMenu;
-import io.github.fchatcolor.menu.MenuConfig;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,12 +10,14 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
-public final class MenuListener
-implements Listener {
-    @EventHandler(priority=EventPriority.NORMAL, ignoreCancelled=true)
+import java.lang.reflect.Method;
+
+public final class MenuListener implements Listener {
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
-        Inventory top = event.getView().getTopInventory();
-        ChatColorMenu menu = MenuListener.menuOf(top);
+        Inventory top = getTopInventory(event);
+        ChatColorMenu menu = menuOf(top);
         if (menu == null) {
             return;
         }
@@ -41,35 +27,36 @@ implements Listener {
             return;
         }
         Inventory clicked = event.getClickedInventory();
-        if (clicked == null || !clicked.equals((Object)top)) {
+        if (clicked == null || !clicked.equals(top)) {
             return;
         }
         int slot = event.getRawSlot();
         MenuConfig.Button close = menu.getConfig().getClose();
         MenuConfig.Button prev = menu.getConfig().getPreviousPage();
         MenuConfig.Button next = menu.getConfig().getNextPage();
-        if (MenuListener.matches(close, slot)) {
+        if (matches(close, slot)) {
             clicker.closeInventory();
             return;
         }
-        if (MenuListener.matches(prev, slot)) {
+        if (matches(prev, slot)) {
             menu.flipPage(false);
             return;
         }
-        if (MenuListener.matches(next, slot)) {
+        if (matches(next, slot)) {
             menu.flipPage(true);
             return;
         }
         menu.handleClick(slot);
     }
 
-    @EventHandler(priority=EventPriority.NORMAL, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onInventoryDrag(InventoryDragEvent event) {
-        ChatColorMenu menu = MenuListener.menuOf(event.getView().getTopInventory());
+        Inventory top = getTopInventory(event);
+        ChatColorMenu menu = menuOf(top);
         if (menu == null) {
             return;
         }
-        int topSize = event.getView().getTopInventory().getSize();
+        int topSize = getTopSize(event, top);
         for (Integer raw : event.getRawSlots()) {
             if (raw == null || raw >= topSize) continue;
             event.setCancelled(true);
@@ -82,11 +69,29 @@ implements Listener {
             return null;
         }
         InventoryHolder holder = inventory.getHolder();
-        return holder instanceof ChatColorMenu ? (ChatColorMenu)holder : null;
+        return holder instanceof ChatColorMenu ? (ChatColorMenu) holder : null;
     }
 
     private static boolean matches(MenuConfig.Button button, int slot) {
         return button != null && button.isEnabled() && button.getSlot() == slot;
     }
-}
 
+    // Reflective helpers to handle InventoryView being a class (1.8) vs interface (1.14+ / Paper 26.2)
+    // Compiling against 1.8 generates INVOKEVIRTUAL; on Paper it must be INVOKEINTERFACE -> IncompatibleClassChangeError
+    private static Inventory getTopInventory(Object event) {
+        try {
+            Method getView = event.getClass().getMethod("getView");
+            Object view = getView.invoke(event);
+            Method getTop = view.getClass().getMethod("getTopInventory");
+            return (Inventory) getTop.invoke(view);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static int getTopSize(Object event, Inventory fallback) {
+        Inventory top = getTopInventory(event);
+        if (top != null) return top.getSize();
+        return fallback != null ? fallback.getSize() : 0;
+    }
+}

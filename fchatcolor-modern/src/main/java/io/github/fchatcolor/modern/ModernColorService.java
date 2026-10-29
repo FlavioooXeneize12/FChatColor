@@ -105,6 +105,7 @@ public final class ModernColorService implements ColorService {
 
     private static final Pattern HEX_TAG_PATTERN = Pattern.compile("(?i)<#([0-9a-f]{6})>");
     private static final Pattern LEGACY_HEX_PATTERN = Pattern.compile("(?i)&#([0-9a-f]{6})");
+    private static final Pattern BARE_HEX_PATTERN = Pattern.compile("(?i)(?<!&)#([0-9a-f]{6})\\b");
 
     private final PluginContext context;
 
@@ -233,12 +234,13 @@ public final class ModernColorService implements ColorService {
         return input.replace('\u00A7', '&');
     }
 
-    /** Convierte {@code &#RRGGBB} al formato {@code &x&R&R&G&G&B&B} que entiende el serializer. */
+    /** Convierte {@code &#RRGGBB} y {@code #RRGGBB} al formato {@code &x&R&R&G&G&B&B} que entiende el serializer. */
     private String normalizeHex(String input) {
         String result = normalizeSection(input);
         if (result.indexOf('#') < 0) {
             return result;
         }
+        result = BARE_HEX_PATTERN.matcher(result).replaceAll("&#$1");
         Matcher matcher = LEGACY_HEX_PATTERN.matcher(result);
         if (!matcher.find()) {
             return result;
@@ -260,6 +262,7 @@ public final class ModernColorService implements ColorService {
      */
     private String prepareMiniMessage(String input) {
         String result = normalizeSection(input);
+        result = BARE_HEX_PATTERN.matcher(result).replaceAll("&#$1");
 
         // &#RRGGBB -> <#RRGGBB>
         Matcher hexMatcher = LEGACY_HEX_PATTERN.matcher(result);

@@ -308,10 +308,6 @@ implements InventoryHolder {
     }
 
     private void selectColor(final ColorCatalog.Entry entry, final int clickedSlot) {
-        if (entry.getValue().startsWith("#") && !viewer.hasPermission("fchatcolor.chat.hex")) {
-            messages.send(viewer, "no-permission", new String[0]);
-            return;
-        }
         final String previous = readCurrentColor();
         final UUID id = viewer.getUniqueId();
         final Player player = viewer;
@@ -345,7 +341,7 @@ implements InventoryHolder {
                             try {
                                 Inventory top = null;
                                 try {
-                                    top = player.getOpenInventory().getTopInventory();
+                                    top = getTopInventoryReflective(player);
                                 } catch (Throwable ignored) {
                                 }
                                 if (top != null && top.getHolder() == ChatColorMenu.this) {
@@ -409,7 +405,7 @@ implements InventoryHolder {
                             try {
                                 Inventory top = null;
                                 try {
-                                    top = player.getOpenInventory().getTopInventory();
+                                    top = getTopInventoryReflective(player);
                                 } catch (Throwable ignored) {
                                 }
                                 if (top != null && top.getHolder() == ChatColorMenu.this) {
@@ -472,6 +468,15 @@ implements InventoryHolder {
             return;
         }
         this.open(this.viewer, target);
+    }
+
+    private Inventory getTopInventoryReflective(Player p) {
+        try {
+            Object view = p.getClass().getMethod("getOpenInventory").invoke(p);
+            return (Inventory) view.getClass().getMethod("getTopInventory").invoke(view);
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 }
 

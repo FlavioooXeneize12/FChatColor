@@ -20,6 +20,7 @@ implements PluginSettings {
     private volatile boolean legacyEnabled = true;
     private volatile boolean hexEnabled = true;
     private volatile boolean miniMessageEnabled = true;
+    private volatile boolean menuEnabled = true;
     private volatile long cacheMillis = 30000L;
 
     public PluginConfig(JavaPlugin plugin) {
@@ -32,6 +33,7 @@ implements PluginSettings {
         this.legacyEnabled = config.getBoolean("chat.modes.legacy", true);
         this.hexEnabled = config.getBoolean("chat.modes.hex", true);
         this.miniMessageEnabled = config.getBoolean("chat.modes.minimessage", true);
+        this.menuEnabled = config.getBoolean("menu.enabled", true);
         this.cacheMillis = Math.max(0L, config.getLong("database.cache-millis", 60000L));
     }
 
@@ -57,6 +59,11 @@ implements PluginSettings {
     @Override
     public long getCacheMillis() {
         return this.cacheMillis;
+    }
+
+    @Override
+    public boolean isMenuEnabled() {
+        return this.menuEnabled;
     }
 
     public DatabaseConfig getDatabaseConfig() {

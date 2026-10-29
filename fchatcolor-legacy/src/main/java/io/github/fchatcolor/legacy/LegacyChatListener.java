@@ -60,6 +60,7 @@ public final class LegacyChatListener implements Listener {
         String message = raw;
         // Fast-path: skip translation when there is nothing to translate (large-server micro-opt)
         if (raw.indexOf('&') >= 0 || raw.indexOf('<') >= 0 || raw.indexOf('\u00A7') >= 0
+                || raw.indexOf('#') >= 0
                 || raw.indexOf(ChatDefaults.COLOR_CHARACTER) >= 0) {
             message = context.getColorService().translate(raw, mode);
         }

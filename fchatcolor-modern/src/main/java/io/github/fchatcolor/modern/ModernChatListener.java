@@ -115,6 +115,9 @@ public final class ModernChatListener implements Listener {
         if (raw.indexOf('<') >= 0) {
             return true;
         }
+        if (raw.indexOf('#') >= 0) {
+            return true;
+        }
         char prefix = ChatDefaults.COLOR_CHARACTER;
         if (raw.indexOf(prefix) >= 0) {
             return true;

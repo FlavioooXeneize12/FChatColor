@@ -1,27 +1,24 @@
-/*
- * Decompiled with CFR 0.152.
- * 
- * Could not load the following classes:
- *  org.bukkit.ChatColor
- *  org.bukkit.command.CommandSender
- *  org.bukkit.configuration.file.FileConfiguration
- *  org.bukkit.configuration.file.YamlConfiguration
- *  org.bukkit.plugin.java.JavaPlugin
- */
 package io.github.fchatcolor.messages;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import io.github.fchatcolor.FChatColorPlugin;
+import io.github.fchatcolor.api.FChatColorAPI;
+import io.github.fchatcolor.api.color.ColorMode;
+import io.github.fchatcolor.api.color.ColorService;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 public final class Messages {
     private static final Map<String, String> DEFAULTS = new HashMap<String, String>();
+    private static final Pattern BARE_HEX = Pattern.compile("(?<!&)#([0-9A-Fa-f]{6})\\b");
     private final JavaPlugin plugin;
     private volatile FileConfiguration messagesFile;
 
@@ -35,12 +32,11 @@ public final class Messages {
         if (!file.exists()) {
             try {
                 this.plugin.saveResource("messages.yml", false);
-            }
-            catch (Throwable t) {
+            } catch (Throwable t) {
                 this.plugin.getLogger().warning("Could not create messages.yml: " + t.getMessage());
             }
         }
-        this.messagesFile = YamlConfiguration.loadConfiguration((File)file);
+        this.messagesFile = YamlConfiguration.loadConfiguration(file);
     }
 
     public String raw(String key) {
@@ -52,13 +48,12 @@ public final class Messages {
     }
 
     public static String readMessage(FileConfiguration file, String key, String fallback) {
-        Object value;
-        Object object = value = file == null ? null : file.get(key);
+        Object value = file == null ? null : file.get(key);
         if (value instanceof String) {
-            return (String)value;
+            return (String) value;
         }
         if (value instanceof List) {
-            return Messages.joinLines((List)value);
+            return Messages.joinLines((List) value);
         }
         return fallback;
     }
@@ -80,19 +75,23 @@ public final class Messages {
     }
 
     public String get(String key) {
-        return Messages.translate(this.applyPrefix(this.raw(key)));
+        return translateInternal(this.applyPrefix(this.raw(key)));
     }
 
-    public String get(String key, String ... placeholders) {
-        return Messages.translate(Messages.applyPlaceholders(this.applyPrefix(this.raw(key)), placeholders));
+    public String get(String key, String... placeholders) {
+        String base = translateInternal(this.applyPrefix(this.raw(key)));
+        return Messages.applyPlaceholders(base, placeholders);
     }
 
-    public void send(CommandSender to, String key, String ... placeholders) {
-        this.sendRaw(to, this.get(key, placeholders));
+    public void send(CommandSender to, String key, String... placeholders) {
+        String text = this.get(key, placeholders);
+        for (String line : text.split("\n")) {
+            to.sendMessage(line);
+        }
     }
 
     public void sendRaw(CommandSender to, String text) {
-        for (String line : Messages.translate(text).split("\n")) {
+        for (String line : translateInternal(text).split("\n")) {
             to.sendMessage(line);
         }
     }
@@ -101,14 +100,44 @@ public final class Messages {
         if (text == null) {
             return "";
         }
-        return ChatColor.translateAlternateColorCodes((char)'&', (String)text);
+        String normalized = BARE_HEX.matcher(text).replaceAll("&#$1");
+        // Try active ColorService via API (covers hex, MiniMessage, legacy)
+        try {
+            FChatColorAPI api = FChatColorAPI.get();
+            if (api != null && api.getColorService() != null) {
+                ColorService service = api.getColorService();
+                return service.translate(normalized, ColorMode.MINIMESSAGE);
+            }
+        } catch (Throwable ignored) {
+        }
+        // Fallback: legacy ChatColor
+        return ChatColor.translateAlternateColorCodes('&', normalized);
+    }
+
+    private String translateInternal(String text) {
+        if (text == null) {
+            return "";
+        }
+        String normalized = BARE_HEX.matcher(text).replaceAll("&#$1");
+        // Prefer plugin's live ColorService (most accurate, reflects reload)
+        try {
+            if (this.plugin instanceof FChatColorPlugin) {
+                ColorService service = ((FChatColorPlugin) this.plugin).getColorService();
+                if (service != null) {
+                    return service.translate(normalized, ColorMode.MINIMESSAGE);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        // Fallback to static path (API)
+        return Messages.translate(text);
     }
 
     private String applyPrefix(String message) {
         return message.replace("{prefix}", this.raw("prefix"));
     }
 
-    private static String applyPlaceholders(String message, String ... placeholders) {
+    private static String applyPlaceholders(String message, String... placeholders) {
         if (placeholders == null || placeholders.length == 0) {
             return message;
         }
@@ -148,4 +177,3 @@ public final class Messages {
         DEFAULTS.put("no-storage", "{prefix}&cThe database is not available right now.");
     }
 }
-
