@@ -348,7 +348,7 @@ implements InventoryHolder {
                         }
                     };
                     if (scheduler != null) {
-                        scheduler.runGlobal(err);
+                        scheduler.runEntity(player, err);
                     } else {
                         err.run();
                     }
@@ -378,7 +378,7 @@ implements InventoryHolder {
                     }
                 };
                 if (scheduler != null) {
-                    scheduler.runGlobal(sync);
+                    scheduler.runEntity(player, sync);
                 } else {
                     sync.run();
                 }
@@ -409,7 +409,7 @@ implements InventoryHolder {
                         }
                     };
                     if (scheduler != null) {
-                        scheduler.runGlobal(err);
+                        scheduler.runEntity(player, err);
                     } else {
                         err.run();
                     }
@@ -437,7 +437,7 @@ implements InventoryHolder {
                     }
                 };
                 if (scheduler != null) {
-                    scheduler.runGlobal(sync);
+                    scheduler.runEntity(player, sync);
                 } else {
                     sync.run();
                 }
