@@ -7,6 +7,7 @@ import io.github.fchatcolor.api.context.PluginContext;
 import io.github.fchatcolor.api.settings.ChatDefaults;
 import io.github.fchatcolor.api.settings.PluginSettings;
 import io.github.fchatcolor.api.storage.ColorStorage;
+import io.github.fchatcolor.api.util.HexColor;
 import io.github.fchatcolor.api.util.RainbowColor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
@@ -135,12 +136,15 @@ public final class ModernChatListener implements Listener {
      *
      * <p>Para {@code rainbow} el mensaje se pinta él mismo letra a letra con
      * el espectro (arcoíris dentro del texto).</p>
+     *
+     * <p>If the stored color's permission was revoked, falls back to default-color.</p>
      */
     private Component applyPlayerColor(Component message, Player player, ModernColorService colorService) {
         try {
             ColorStorage storage = context.getStorage();
             String color = storage.getSelectedColor(player.getUniqueId());
-            if (color == null || color.isEmpty()) {
+            String effective = resolveEffectiveColor(player, color);
+            if (effective == null || effective.isEmpty()) {
                 return message;
             }
 
@@ -148,11 +152,11 @@ public final class ModernChatListener implements Listener {
             boolean allowHex = player.hasPermission(ColorSelector.PERMISO_HEX);
 
             // Rainbow: el color va letra a letra dentro del mensaje
-            if (RainbowColor.isRainbow(color)) {
+            if (RainbowColor.isRainbow(effective)) {
                 return applyRainbow(message, allowHex);
             }
 
-            TextColor textColor = colorService.resolveTextColor(color, allowHex);
+            TextColor textColor = colorService.resolveTextColor(effective, allowHex);
             if (textColor == null) {
                 return message;
             }
@@ -162,6 +166,66 @@ public final class ModernChatListener implements Listener {
                     + player.getName() + ": " + t.getMessage());
             return message;
         }
+    }
+
+    private String resolveEffectiveColor(Player player, String stored) {
+        if (stored != null && !stored.isEmpty()) {
+            String perm = getPermissionForStored(stored);
+            if (perm == null || perm.isEmpty() || player.hasPermission(perm)) {
+                return stored;
+            }
+        }
+        String def = null;
+        try {
+            def = context.getSettings().getDefaultColor();
+        } catch (Throwable ignored) {}
+        return resolveDefaultColor(def);
+    }
+
+    private String getPermissionForStored(String stored) {
+        try {
+            Object plugin = context.getPlugin();
+            Object colors = plugin.getClass().getMethod("getColors").invoke(plugin);
+            if (colors != null) {
+                Object entry = colors.getClass().getMethod("findByValue", String.class).invoke(colors, stored);
+                if (entry == null) {
+                    entry = colors.getClass().getMethod("find", String.class).invoke(colors, stored);
+                }
+                if (entry != null) {
+                    return (String) entry.getClass().getMethod("getPermission").invoke(entry);
+                }
+            }
+        } catch (Throwable ignored) {}
+        return null;
+    }
+
+    private String resolveDefaultColor(String raw) {
+        if (raw == null) return null;
+        String s = raw.trim();
+        if (s.isEmpty() || s.equalsIgnoreCase("none") || s.equalsIgnoreCase("disabled") || s.equalsIgnoreCase("off")) return null;
+        try {
+            Object plugin = context.getPlugin();
+            Object colors = plugin.getClass().getMethod("getColors").invoke(plugin);
+            if (colors != null) {
+                Object entry = colors.getClass().getMethod("find", String.class).invoke(colors, s);
+                if (entry != null) {
+                    return (String) entry.getClass().getMethod("getValue").invoke(entry);
+                }
+                Integer rgb = HexColor.parseRgb(s);
+                if (rgb != null) return HexColor.toHex(rgb);
+                String clean = s.trim();
+                if (clean.startsWith("&") || clean.startsWith("\u00A7")) clean = clean.substring(1);
+                if (HexColor.isLegacyCode(clean)) return HexColor.normalizeLegacyCode(clean);
+                if (RainbowColor.isRainbow(s)) return "rainbow";
+            }
+        } catch (Throwable ignored) {}
+        Integer rgb = HexColor.parseRgb(s);
+        if (rgb != null) return HexColor.toHex(rgb);
+        String clean = s.trim();
+        if (clean.startsWith("&") || clean.startsWith("\u00A7")) clean = clean.substring(1);
+        if (HexColor.isLegacyCode(clean)) return HexColor.normalizeLegacyCode(clean);
+        if (RainbowColor.isRainbow(s)) return "rainbow";
+        return s;
     }
 
     /**

@@ -13,6 +13,10 @@ menu:
   enabled: true
 
 chat:
+  # Default color applied to players with no selection, or whose selected color permission was revoked.
+  # Use a key from colors.yml (e.g. "white"), a hex "#RRGGBB", a legacy code "a" / "&a", "rainbow", or "" to disable.
+  default-color: white
+
   # Modes enabled to pick a color with /fchatcolor set.
   # The player also needs the matching permission and the server
   # must support it.

@@ -101,24 +101,28 @@ public final class LegacyChatListener implements Listener {
      * <p>For a normal color we prepend its code. For
      * {@code rainbow} el mensaje se pinta él mismo letra a letra con el
      * espectro (arcoíris dentro del texto).</p>
+     *
+     * <p>If the stored color's permission was revoked, falls back to the
+     * configured default-color (chat.default-color).</p>
      */
     private String applyPlayerColor(Player player, String message, ColorMode mode) {
         try {
             ColorStorage storage = context.getStorage();
             String color = storage.getSelectedColor(player.getUniqueId());
-            if (color == null || color.isEmpty()) {
+            String effective = resolveEffectiveColor(player, color);
+            if (effective == null || effective.isEmpty()) {
                 return message;
             }
 
             // Rainbow: el color va letra a letra dentro del mensaje
-            if (RainbowColor.isRainbow(color)) {
+            if (RainbowColor.isRainbow(effective)) {
                 boolean hexAllowed = player.hasPermission(ColorSelector.PERMISO_HEX)
                         && context.getServerInfo().hasLegacyHex()
                         && context.getColorService().supports(ColorMode.HEX);
                 return RainbowColor.colorize(message, hexAllowed);
             }
 
-            String prefix = colorToSectionPrefix(player, color, mode);
+            String prefix = colorToSectionPrefix(player, effective, mode);
             if (prefix == null || prefix.isEmpty()) {
                 return message;
             }
@@ -128,6 +132,72 @@ public final class LegacyChatListener implements Listener {
                     + player.getName() + ": " + t.getMessage());
             return message;
         }
+    }
+
+    private String resolveEffectiveColor(Player player, String stored) {
+        // If stored is valid and permission still held, use it
+        if (stored != null && !stored.isEmpty()) {
+            String perm = getPermissionForStored(stored);
+            if (perm == null || perm.isEmpty() || player.hasPermission(perm)) {
+                return stored;
+            }
+            // Permission revoked -> fall through to default
+        }
+        // Fallback to default-color
+        String def = null;
+        try {
+            def = context.getSettings().getDefaultColor();
+        } catch (Throwable ignored) {}
+        return resolveDefaultColor(def);
+    }
+
+    private String getPermissionForStored(String stored) {
+        try {
+            Object plugin = context.getPlugin();
+            Class<?> clazz = plugin.getClass();
+            Object colors = clazz.getMethod("getColors").invoke(plugin);
+            if (colors != null) {
+                Object entry = colors.getClass().getMethod("findByValue", String.class).invoke(colors, stored);
+                if (entry == null) {
+                    entry = colors.getClass().getMethod("find", String.class).invoke(colors, stored);
+                }
+                if (entry != null) {
+                    return (String) entry.getClass().getMethod("getPermission").invoke(entry);
+                }
+            }
+        } catch (Throwable ignored) {}
+        // Raw hex/legacy/rainbow have no catalog permission; check hex perm separately via mode? Not needed here.
+        return null;
+    }
+
+    private String resolveDefaultColor(String raw) {
+        if (raw == null) return null;
+        String s = raw.trim();
+        if (s.isEmpty() || s.equalsIgnoreCase("none") || s.equalsIgnoreCase("disabled") || s.equalsIgnoreCase("off")) return null;
+        try {
+            Object plugin = context.getPlugin();
+            Object colors = plugin.getClass().getMethod("getColors").invoke(plugin);
+            if (colors != null) {
+                Object entry = colors.getClass().getMethod("find", String.class).invoke(colors, s);
+                if (entry != null) {
+                    return (String) entry.getClass().getMethod("getValue").invoke(entry);
+                }
+                Integer rgb = HexColor.parseRgb(s);
+                if (rgb != null) return HexColor.toHex(rgb);
+                String clean = s.trim();
+                if (clean.startsWith("&") || clean.startsWith("\u00A7")) clean = clean.substring(1);
+                if (HexColor.isLegacyCode(clean)) return HexColor.normalizeLegacyCode(clean);
+                if (RainbowColor.isRainbow(s)) return "rainbow";
+            }
+        } catch (Throwable ignored) {}
+        // Fallback: try direct parse
+        Integer rgb = HexColor.parseRgb(s);
+        if (rgb != null) return HexColor.toHex(rgb);
+        String clean = s.trim();
+        if (clean.startsWith("&") || clean.startsWith("\u00A7")) clean = clean.substring(1);
+        if (HexColor.isLegacyCode(clean)) return HexColor.normalizeLegacyCode(clean);
+        if (RainbowColor.isRainbow(s)) return "rainbow";
+        return s;
     }
 
     /** Converts the stored DB color to § codes ready for chat. */

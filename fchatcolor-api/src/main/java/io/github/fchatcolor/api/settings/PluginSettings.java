@@ -20,4 +20,7 @@ public interface PluginSettings {
 
     /** Whether the /chatcolor GUI menu is enabled. */
     boolean isMenuEnabled();
+
+    /** Default chat color for players without a selection or with revoked permission (e.g. "white", "#FFFFFF", "a", "rainbow", or "" for none). */
+    String getDefaultColor();
 }

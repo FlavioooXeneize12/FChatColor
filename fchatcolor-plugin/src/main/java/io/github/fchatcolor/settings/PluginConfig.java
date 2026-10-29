@@ -21,6 +21,7 @@ implements PluginSettings {
     private volatile boolean hexEnabled = true;
     private volatile boolean miniMessageEnabled = true;
     private volatile boolean menuEnabled = true;
+    private volatile String defaultColor = "white";
     private volatile long cacheMillis = 30000L;
 
     public PluginConfig(JavaPlugin plugin) {
@@ -34,6 +35,10 @@ implements PluginSettings {
         this.hexEnabled = config.getBoolean("chat.modes.hex", true);
         this.miniMessageEnabled = config.getBoolean("chat.modes.minimessage", true);
         this.menuEnabled = config.getBoolean("menu.enabled", true);
+        String def = config.getString("chat.default-color", null);
+        if (def == null) def = config.getString("chat.default_color", null);
+        if (def == null) def = config.getString("default-color", "white");
+        this.defaultColor = def != null ? def.trim() : "white";
         this.cacheMillis = Math.max(0L, config.getLong("database.cache-millis", 60000L));
     }
 
@@ -64,6 +69,11 @@ implements PluginSettings {
     @Override
     public boolean isMenuEnabled() {
         return this.menuEnabled;
+    }
+
+    @Override
+    public String getDefaultColor() {
+        return this.defaultColor;
     }
 
     public DatabaseConfig getDatabaseConfig() {
