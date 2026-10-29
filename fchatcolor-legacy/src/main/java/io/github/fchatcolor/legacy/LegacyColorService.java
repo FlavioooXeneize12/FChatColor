@@ -44,7 +44,7 @@ public final class LegacyColorService implements ColorService {
         char character = ChatDefaults.COLOR_CHARACTER;
         String quoted = Pattern.quote(String.valueOf(character));
         this.hexPattern = Pattern.compile("(?i)" + quoted + "#([0-9a-f]{6})");
-        this.bareHexPattern = Pattern.compile("(?i)(?<!" + quoted + ")#([0-9a-f]{6})\\b");
+        this.bareHexPattern = Pattern.compile("(?i)(?<![&<])#([0-9a-f]{6})(?![0-9a-f])");
         this.tagPattern = Pattern.compile("</?([a-zA-Z0-9_#][a-zA-Z0-9_:#-]*)>");
         this.miniTagToLegacy = buildMiniTagMap();
     }

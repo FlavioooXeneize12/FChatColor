@@ -105,7 +105,7 @@ public final class ModernColorService implements ColorService {
 
     private static final Pattern HEX_TAG_PATTERN = Pattern.compile("(?i)<#([0-9a-f]{6})>");
     private static final Pattern LEGACY_HEX_PATTERN = Pattern.compile("(?i)&#([0-9a-f]{6})");
-    private static final Pattern BARE_HEX_PATTERN = Pattern.compile("(?i)(?<!&)#([0-9a-f]{6})\\b");
+    private static final Pattern BARE_HEX_PATTERN = Pattern.compile("(?i)(?<![&<])#([0-9a-f]{6})(?![0-9a-f])");
 
     private final PluginContext context;
 

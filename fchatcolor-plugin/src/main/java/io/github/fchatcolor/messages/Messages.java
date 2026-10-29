@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 
 public final class Messages {
     private static final Map<String, String> DEFAULTS = new HashMap<String, String>();
-    private static final Pattern BARE_HEX = Pattern.compile("(?<!&)#([0-9A-Fa-f]{6})\\b");
+    private static final Pattern BARE_HEX = Pattern.compile("(?i)(?<![&<])#([0-9A-Fa-f]{6})(?![0-9A-Fa-f])");
     private final JavaPlugin plugin;
     private volatile FileConfiguration messagesFile;
 
