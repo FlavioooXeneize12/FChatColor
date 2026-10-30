@@ -1,6 +1,8 @@
 package io.github.fchatcolor.api.util;
 
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Utilidades para trabajar con colores hexadecimales y con su aproximacion
@@ -159,5 +161,37 @@ public final class HexColor {
     /** Normaliza un código legacy a minúsculas. */
     public static String normalizeLegacyCode(String code) {
         return code == null ? null : code.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /** Bare {@code #RRGGBB} pattern (must not run inside {@code <...>} tags). */
+    private static final Pattern BARE_HEX_PATTERN =
+            Pattern.compile("(?i)(?<![&<])#([0-9A-Fa-f]{6})(?![0-9A-Fa-f])");
+
+    /** MiniMessage tag spans: {@code #RRGGBB} inside them (e.g. {@code <gradient:#FF4141:...>}) must be kept intact. */
+    private static final Pattern TAG_SPAN_PATTERN = Pattern.compile("<[^<>]*>");
+
+    /**
+     * Converts bare {@code #RRGGBB} to {@code &#RRGGBB}, skipping anything
+     * inside {@code <...>} tags so MiniMessage tags like
+     * {@code <gradient:#FF4141:#36EFAB>} survive preprocessing.
+     */
+    public static String replaceBareHexOutsideTags(String input) {
+        if (input == null || input.indexOf('#') < 0) {
+            return input;
+        }
+        Matcher tags = TAG_SPAN_PATTERN.matcher(input);
+        if (!tags.find()) {
+            return BARE_HEX_PATTERN.matcher(input).replaceAll("&#$1");
+        }
+        StringBuffer out = new StringBuffer(input.length() + 8);
+        int last = 0;
+        tags.reset();
+        while (tags.find()) {
+            out.append(BARE_HEX_PATTERN.matcher(input.substring(last, tags.start())).replaceAll("&#$1"));
+            out.append(tags.group());
+            last = tags.end();
+        }
+        out.append(BARE_HEX_PATTERN.matcher(input.substring(last)).replaceAll("&#$1"));
+        return out.toString();
     }
 }

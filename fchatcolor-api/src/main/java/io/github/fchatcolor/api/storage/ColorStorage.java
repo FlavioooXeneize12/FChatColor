@@ -36,4 +36,13 @@ public interface ColorStorage {
 
     /** Removes the player's stored color. */
     void clearSelectedColor(UUID playerId);
+
+    /** Returns the stored modifiers for the player (e.g. "bold,italic" or "&l,&o") or null. */
+    String getSelectedModifiers(UUID playerId);
+
+    /** Saves the player's modifiers. */
+    void setSelectedModifiers(UUID playerId, String modifiers);
+
+    /** Removes the player's stored modifiers. */
+    void clearSelectedModifiers(UUID playerId);
 }

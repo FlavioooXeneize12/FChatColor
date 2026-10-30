@@ -31,6 +31,7 @@ title: "<dark_gray>ChatColor (Page %page%/%maxpage%)"
 size: 54
 
 colors-slots: 0-8;9-17;18-26;27-35;36-44
+modifiers-slots: ["bold:46", "strikethrough:47", "underline:51", "italic:52"]
 
 fill:
   enabled: false
@@ -58,6 +59,28 @@ item-format:
     material: "{color_material}"
     lore:
       - '&cYou need the {permission} permission to select the color!'
+
+modifiers-format:
+  select:
+    name: "{modifiers_name}"
+    material: "{modifiers_material}"
+    lore:
+      - '&aClick to select!'
+  selected:
+    name: "{modifiers_name}"
+    material: "{modifiers_material}"
+    lore:
+      - '&cYou have already selected this modifier {modifier}!'
+  unselect:
+    name: "{modifiers_name}"
+    material: "{modifiers_material}"
+    lore:
+      - '&cClick to remove your chat modifier {modifier}!'
+  no_permission:
+    name: "{modifiers_name}"
+    material: "{modifiers_material}"
+    lore:
+      - '&cYou need the {permission} permission to select the modifier {modifier}!'
 
 buttons:
   close:

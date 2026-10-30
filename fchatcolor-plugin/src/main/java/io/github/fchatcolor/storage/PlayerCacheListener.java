@@ -38,9 +38,9 @@ implements Listener {
             public void run() {
                 try {
                     storage.getSelectedColor(id);
+                    try { storage.getSelectedModifiers(id); } catch (Throwable ignored2) {}
                 }
                 catch (Throwable throwable) {
-                    // empty catch block
                 }
             }
         };

@@ -240,7 +240,7 @@ public final class ModernColorService implements ColorService {
         if (result.indexOf('#') < 0) {
             return result;
         }
-        result = BARE_HEX_PATTERN.matcher(result).replaceAll("&#$1");
+        result = HexColor.replaceBareHexOutsideTags(result);
         Matcher matcher = LEGACY_HEX_PATTERN.matcher(result);
         if (!matcher.find()) {
             return result;
@@ -262,7 +262,7 @@ public final class ModernColorService implements ColorService {
      */
     private String prepareMiniMessage(String input) {
         String result = normalizeSection(input);
-        result = BARE_HEX_PATTERN.matcher(result).replaceAll("&#$1");
+        result = HexColor.replaceBareHexOutsideTags(result);
 
         // &#RRGGBB -> <#RRGGBB>
         Matcher hexMatcher = LEGACY_HEX_PATTERN.matcher(result);
@@ -297,9 +297,11 @@ public final class ModernColorService implements ColorService {
     }
 
     /** Parsea con MiniMessage con red de seguridad ante etiquetas malformadas. */
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+
     private Component parseMiniMessage(String input) {
         try {
-            return MiniMessage.miniMessage().deserialize(input);
+            return MINI_MESSAGE.deserialize(input);
         } catch (Throwable t) {
             try {
                 return AMPERSAND.deserialize(input);

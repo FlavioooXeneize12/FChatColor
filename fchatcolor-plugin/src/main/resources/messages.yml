@@ -18,28 +18,49 @@
 # {prefix} expands to the "prefix" message below. Delete {prefix} from any
 # message to remove the plugin prefix from that message only.
 
-prefix: '&8[&bFChatColor&8] &r'
-no-permission: "{prefix}&cYou don't have permission to do that."
-player-only: '{prefix}&cThis command can only be used in game.'
-unknown-command: '{prefix}&cUnknown subcommand. Use &f/fchatcolor help&c.'
+prefix: '&#61FFC5&lC&#4CF7B8&l. &#36EFAB&lC&lO&lL&#4CF7B8&lO&#61FFC5&lR &f≋ &r'
+no-permission: "{prefix}&cNo tienes permisos para ejecutar este comando."
+player-only: '{prefix}&cEste comando solo puede ser ejecutado por jugadores.'
+unknown-command: '{prefix}&cComando Incorrecto. Usa &f/fchatcolor help&c.'
 
-# Multi-line example (list format)
 usage:
-  - '{prefix}&e/fchatcolor set <color> &7- choose your chat color'
-  - '&e/fchatcolor clear &7- remove your color'
-  - '&e/fchatcolor set <player> <color> &7- (console) set the color of a player'
-  - '&e/fchatcolor reload &7- reload the configuration'
+  user:
+   - ''
+   - '{prefix} <white>- Ayuda'
+   - ''
+   - '&e/chatcolor set <color> &7- Selecciona tu color'
+   - '&e/chatcolor &7- Abre el menú'
+   - ''
+  admin:
+   - ''
+   - '{prefix}'
+   - ''
+   - '&e/fchatcolor set <color> &7- choose your chat color'
+   - '&e/fchatcolor clear &7- remove your color'
+   - '&e/fchatcolor modifier set <modifier> &7- toggle a chat modifier'
+   - '&e/fchatcolor set <player> <color> &7- (console) set the color of a player'
+   - '&e/fchatcolor modifier set <player> <modifier> &7- (console) toggle modifier for a player'
+   - '&e/fchatcolor menu <player> <gray>- Open the menu for yourself or for a user'
+   - '&e/fchatcolor reload &7- reload the configuration'
+   - ''
 
 # {color} = the color's NAME painted in that color (a visible preview)
 # {name}  = the color's name, plain | {value} = stored value | {player} = target (console)
-color-set: '{prefix}&aChat color updated: {color}&r &7({value})'
-color-set-other: '{prefix}&aSet the chat color of {player}: {color}&r &7({value})'
-color-cleared: '{prefix}&aYour chat color has been removed; the server default will be used.'
-color-cleared-other: '{prefix}&aRemoved the chat color of {player}.'
-color-invalid: '{prefix}&cInvalid color. Examples: &f#FF5555&c, &f&9&c or a name from colors.yml.'
-no-color-permission: "{prefix}&cYou don't have permission to use the color {color}."
-player-not-found: '{prefix}&cPlayer &f{player} &cwas not found online.'
+color-set: '{prefix}&a¡Tu color de chat ha sido cambiado a {color}&a!' #&r &7({value})'
+color-set-other: '{prefix}&aEl color de chat de {player} ha sido modificado a {color}' #&r &7({value})'
+color-cleared: '{prefix}&aTu color de chat ha sido eliminado correctamente.'
+color-cleared-other: '{prefix}&aEl color de chat de {player} ha sido eliminado.'
+color-invalid: '{prefix}&cColor invalido.'
+no-color-permission: 
+ - ""
+ - "&f &#BFFF35⚐ &f&k|&r &a &l¡TIENDA OFICIAL! &8[#H0359]"
+ - "&f &f→ &#CCFF5Ehttps://tienda.hadesmc.net/ CREAR ENLACE DE COMPRA"
+ - ""
+ - "&f &#BFFF35🌊 &a¡Adquiere este icono!"
+ - ""
+player-not-found: '{prefix}&cEl jugador &f{player} &cno se encuentra conectado.'
 mode-disabled: '{prefix}&cThat color mode is disabled on this server.'
-storage-error: '{prefix}&cCould not save the color. Try again in a few seconds.'
 reload-done: '{prefix}&aConfiguration, messages, colors and services reloaded successfully.'
-no-storage: '{prefix}&cThe database is not available right now.'
+no-modifier-permission: "{prefix}&cYou don't have permission to use the modifier {modifier}."
+modifier-set: '{prefix}&aModifier {modifier} enabled: {name}'
+modifier-removed: '{prefix}&cModifier {modifier} disabled: {name}'

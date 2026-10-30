@@ -93,9 +93,9 @@ public final class LegacyColorService implements ColorService {
      * o por el color legacy más cercano si no (1.8/1.12/1.15...).
      */
     private String translateHex(String input) {
-        // Normalize bare #RRGGBB to &#RRGGBB so the main pattern handles both
+        // Normalize bare #RRGGBB to &#RRGGBB so the main pattern handles both (skips <...> MiniMessage tags)
         if (input.indexOf('#') >= 0) {
-            input = bareHexPattern.matcher(input).replaceAll("&#$1");
+            input = HexColor.replaceBareHexOutsideTags(input);
         }
         Matcher matcher = hexPattern.matcher(input);
         if (!matcher.find()) {

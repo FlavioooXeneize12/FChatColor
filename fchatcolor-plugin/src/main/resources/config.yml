@@ -17,6 +17,17 @@ chat:
   # Use a key from colors.yml (e.g. "white"), a hex "#RRGGBB", a legacy code "a" / "&a", "rainbow", or "" to disable.
   default-color: white
 
+  # Per-permission defaults: if the player has no selected color (or its permission was revoked),
+  # the first permission they have in this map wins. This lets you set e.g. "fchatcolor.default-color.red"
+  # -> "red" so a player who loses "fchatcolor.color.green" will fall back to red instead of white.
+  # The global default-color above is used if no permission matches.
+  default-permission-colors:
+    "fchatcolor.default-color.hades": "#ffc504"
+    "fchatcolor.default-color.mega": "#77ff04"
+    "fchatcolor.default-color.super": "#ff04d0"
+  #  "fchatcolor.default-color.vip": "#FF55FF"
+  #  "fchatcolor.default-color.rainbow": "rainbow"
+
   # Modes enabled to pick a color with /fchatcolor set.
   # The player also needs the matching permission and the server
   # must support it.
@@ -24,6 +35,9 @@ chat:
     legacy: true
     hex: true
     minimessage: true
+
+  # Verbose debug logging to console (placeholder resolve, chat pipeline, storage). Default false.
+  debug: false
 
 database:
   # SQLITE (local file, nothing to install) or MYSQL (MySQL/MariaDB server)

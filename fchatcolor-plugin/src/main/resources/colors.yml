@@ -16,6 +16,8 @@
 #   value:      color stored in the database: #RRGGBB (hex) or
 #               a legacy code such as &c or c. Special value "rainbow"
 #               makes the color cycle through the spectrum in chat.
+#               A YAML list of 2+ colors (["#FF4141", "#36EFAB", ...])
+#               makes a custom per-letter gradient cycling that palette.
 #   material:   item material shown in the /chatcolor menu (default
 #               PLAYER_HEAD). Use any Bukkit material name.
 #   texture:    skin for PLAYER_HEAD items in the menu. Leave empty for
@@ -54,13 +56,13 @@ colors:
     permission: fchatcolor.color.dark_green
     value: '#00AA00'
     material: "PLAYER_HEAD"
-    texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWUzOGZhMzEzMWUyZGEwNGA4ZjhkNTA4NzJhODIzMmQ3ZDlkZWEzNDBkMDZjOTA5N2ZmYTNjYzQ4MjA4ZGYxZCJ9fX0="
+    texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHBzOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzJhNTJkNTc5YWZlMmZkZjdiOGVjZmE3NDZjZDAxNjE1MGQ5NmJlYjc1MDA5YmIyNzMzYWRlMTVkNDg3YzQyYTEifX19"
   dark_aqua:
     name: '<dark_aqua>Dark Aqua'
     permission: fchatcolor.color.dark_aqua
     value: '#00AAAA'
     material: "PLAYER_HEAD"
-    texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMzFmNTcwNTExMzBlODUwODQ4ZThlMzdlNzIxMTBhMTZmMDlkYmRhYjdkOWQ2ZTMzYTlmZWNmZDM0OGQ1YTExMCJ9fX0="
+    texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHBzOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzJkNmE4YjQ3ZGE5MjNiN2QxMDE0MjQ0N2ZkYmRjZmQxZThlODJlYjQ4NDk2NDI1MmJiMzZkZGI1ZjczYjUxYzIifX19"
   dark_red:
     name: '<dark_red>Dark Red'
     permission: fchatcolor.color.dark_red
@@ -78,13 +80,13 @@ colors:
     permission: fchatcolor.color.gold
     value: '#FFAA00'
     material: "PLAYER_HEAD"
-    texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMjA5MGQwOWUxNzNlZTM0MTM4YzNiMDFiNDhlZTBiZTUzNGJiYjFhY2UwZGRmNWZmOThlNjZmN2IwMjExMzk5NSJ9fX0="
+    texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHBzOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlL2RjZjI4MzUxODBjYmZlYzNiMzE3ZDZhNDc0OTFhNzRhZTcxNDM1YmExNjlhNTc5MjViOTA5NmVhMmY5YzYxYjYifX19"
   gray:
     name: '<gray>Gray'
     permission: fchatcolor.color.gray
     value: '#AAAAAA'
     material: "PLAYER_HEAD"
-    texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWM4ZTBkZGYyNDMyZjQzMzJiODc2OTFiNTk1MmM3Njc5NzYzZWY0ZjI3NWI4NzRlOWJjZWI4ODhlZDViNWI5In19fQ=="
+    texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHBzOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlL2ZmOWJiOWU1NjEyNWM4MjI3Yjk0YmJkYTlmNmUwZjg2MjkzMWMyMjkyNTViYThmMTIwNWQxM2M0NGMxYmI1NjEifX19"
   dark_gray:
     name: '<dark_gray>Dark Gray'
     permission: fchatcolor.color.dark_gray
@@ -139,3 +141,38 @@ colors:
     value: rainbow
     material: "PLAYER_HEAD"
     texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZjEwODY3YTgxNzdkMjMyZjU2YTM5ZDk4MjE5MTRjNTA4OWU3NjQ2YmUwN2NjMWNiOTRmNzk3MGM3YmMwN2JjMiJ9fX0="
+  rainbow2:
+    name: '<rainbow>Arco Iris'
+    permission: fchatcolor.color.rainbow2
+    value: ["#FF4141", "#36EFAB", "#FF35F1", "#FDFF61"]
+    material: "PLAYER_HEAD"
+    texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZjEwODY3YTgxNzdkMjMyZjU2YTM5ZDk4MjE5MTRjNTA4OWU3NjQ2YmUwN2NjMWNiOTRmNzk3MGM3YmMwN2JjMiJ9fX0="
+    # In the name above, <rainbow> renders with this entry's own palette
+    # (value). You can also write {value} anywhere in the name for the same effect.
+    
+modifiers:
+  bold:
+     name: '<color><bold>Bold'
+     permission: fchatcolor.color.modifiers.bold
+     value: "&l"
+     material: "PLAYER_HEAD"
+     texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWU5MWY5ODJkMzM2YWZmMzQ1YWZhZmY1MzUxODY0NGUxNjg1NjEwNzk4YzE1Mjg2YzE3ZGUxNDc1ODFlNzIxOSJ9fX0="
+  strikethrough:
+     name: '<color><strikethrough>Strikethrough'
+     permission: fchatcolor.color.modifiers.strikethrough
+     value: "&m"
+     material: "PLAYER_HEAD"
+     texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWU5MWY5ODJkMzM2YWZmMzQ1YWZhZmY1MzUxODY0NGUxNjg1NjEwNzk4YzE1Mjg2YzE3ZGUxNDc1ODFlNzIxOSJ9fX0="
+  underline:
+     name: '<yellow><underlined>Underline'
+     permission: fchatcolor.color.modifiers.underline
+     value: "&n"
+     material: "PLAYER_HEAD"
+     texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWU5MWY5ODJkMzM2YWZmMzQ1YWZhZmY1MzUxODY0NGUxNjg1NjEwNzk4YzE1Mjg2YzE3ZGUxNDc1ODFlNzIxOSJ9fX0="
+  italic:
+     name: '<color><italic>Italic'
+     permission: fchatcolor.color.modifiers.italic
+     value: "&o"
+     material: "PLAYER_HEAD"
+     texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWU5MWY5ODJkMzM2YWZmMzQ1YWZhZmY1MzUxODY0NGUxNjg1NjEwNzk4YzE1Mjg2YzE3ZGUxNDc1ODFlNzIxOSJ9fX0="
+    

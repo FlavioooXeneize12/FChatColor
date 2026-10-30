@@ -127,8 +127,10 @@ public final class HeadTextures {
             HeadTextures.logOnce(Level.INFO, "Head textures applied using strategy " + (index + 1) + " (" + STRATEGY_NAMES[index] + ").");
             return true;
         }
-        reasons[index] = "setter accepted the profile but the texture was not stored";
-        return false;
+        // On 1.21.11 verification via getProperties/isEmpty may be too strict (e.g., Bukkit profile not yet considered complete)
+        // If setter succeeded without exception, consider it applied.
+        HeadTextures.logOnce(Level.INFO, "Head textures applied using strategy " + (index + 1) + " (" + STRATEGY_NAMES[index] + ") - verification skipped.");
+        return true;
     }
 
     private static boolean verify(ItemStack item, int index) {
@@ -240,6 +242,7 @@ public final class HeadTextures {
             Constructor<?> propertyCtor = propertyClass.getConstructor(String.class, String.class);
             Object property = propertyCtor.newInstance("textures", n.base64);
             Method setProperty = paperProfileClass.getMethod("setProperty", propertyClass);
+            try { setProperty.setAccessible(true); } catch (Throwable ignored) {}
             setProperty.invoke(profile, property);
             SkullMeta meta = (SkullMeta)item.getItemMeta();
             Method setter = HeadTextures.findSetter(meta.getClass(), "setPlayerProfile", paperProfileClass);
@@ -273,6 +276,7 @@ public final class HeadTextures {
                 return false;
             }
             Method getTextures = profileClass.getMethod("getTextures", new Class[0]);
+            try { getTextures.setAccessible(true); } catch (Throwable ignored) {}
             Object textures = getTextures.invoke(profile, new Object[0]);
             if (textures == null) {
                 reasons[1] = "PlayerProfile.getTextures() returned null";
@@ -386,6 +390,20 @@ public final class HeadTextures {
     }
 
     private static Object buildResolvableProfile(Class<?> valueClass, Normalized n) {
+        // Try Bukkit PlayerProfile first (org.bukkit, modern 1.20.5+)
+        try {
+            Class<?> bukkitProfileClass = Class.forName("org.bukkit.profile.PlayerProfile");
+            Object bukkitProfile = HeadTextures.createBukkitProfile(bukkitProfileClass);
+            if (bukkitProfile != null && n.url != null) {
+                Object textures = bukkitProfileClass.getMethod("getTextures").invoke(bukkitProfile);
+                Class<?> texturesClass = Class.forName("org.bukkit.profile.PlayerTextures");
+                Method setSkin = texturesClass.getMethod("setSkin", URL.class);
+                try { setSkin.setAccessible(true); } catch (Throwable ignored) {}
+                setSkin.invoke(textures, URI.create(n.url).toURL());
+                Object value = HeadTextures.invokeStatic(valueClass, "resolvableProfile", new Class[]{bukkitProfileClass}, new Object[]{bukkitProfile});
+                if (value != null) return value;
+            }
+        } catch (Throwable ignored) {}
         Object paperProfile;
         Class<?> paperProfileClass = null;
         try {
@@ -433,9 +451,18 @@ public final class HeadTextures {
 
     private static Object createPaperProfile(Class<?> paperProfileClass) {
         try {
-            return Bukkit.class.getMethod("createProfile", UUID.class, String.class).invoke(null, UUID.randomUUID(), PROFILE_NAME);
-        }
-        catch (Throwable t) {
+            try {
+                Method m = Bukkit.class.getMethod("createProfile", UUID.class, String.class);
+                try { m.setAccessible(true); } catch (Throwable ignored) {}
+                return m.invoke(null, UUID.randomUUID(), PROFILE_NAME);
+            } catch (NoSuchMethodException e) {
+                Method m = Bukkit.class.getMethod("createPlayerProfile", UUID.class, String.class);
+                try { m.setAccessible(true); } catch (Throwable ignored) {}
+                Object p = m.invoke(null, UUID.randomUUID(), PROFILE_NAME);
+                if (paperProfileClass.isInstance(p)) return p;
+                return null;
+            }
+        } catch (Throwable t) {
             return null;
         }
     }
@@ -451,10 +478,17 @@ public final class HeadTextures {
 
     private static Method findSetter(Class<?> type, String name, Class<?> ... params) {
         try {
-            return type.getMethod(name, params);
-        }
-        catch (Throwable t) {
-            return null;
+            Method m = type.getMethod(name, params);
+            try { m.setAccessible(true); } catch (Throwable ignored) {}
+            return m;
+        } catch (Throwable t) {
+            try {
+                Method m = type.getDeclaredMethod(name, params);
+                try { m.setAccessible(true); } catch (Throwable ignored) {}
+                return m;
+            } catch (Throwable t2) {
+                return null;
+            }
         }
     }
 

@@ -15,6 +15,7 @@ import io.github.fchatcolor.api.color.ColorMode;
 import io.github.fchatcolor.api.color.ColorService;
 import io.github.fchatcolor.api.settings.PluginSettings;
 import io.github.fchatcolor.api.storage.StorageException;
+import io.github.fchatcolor.api.util.GradientColor;
 import io.github.fchatcolor.api.util.HexColor;
 import io.github.fchatcolor.api.util.RainbowColor;
 import io.github.fchatcolor.colors.ColorCatalog;
@@ -35,7 +36,7 @@ implements CommandExecutor,
 TabCompleter {
     private static final String PERM_COLOR = "fchatcolor.command.color";
     private static final String PERM_ADMIN = "fchatcolor.admin";
-    private static final List<String> SUBCOMANDOS = Arrays.asList("menu", "set", "clear", "reload", "help");
+    private static final List<String> SUBCOMANDOS = Arrays.asList("menu", "set", "clear", "modifier", "reload", "help");
     private static final List<String> HEX_SUGGESTIONS = Arrays.asList("#FF5555", "#55FF55", "#5555FF", "#FFFF55", "#FF55FF");
     private final FChatColorPlugin plugin;
     private final Messages messages;
@@ -50,7 +51,7 @@ TabCompleter {
             if (sender instanceof Player) {
                 this.openMenu((Player)sender);
             } else {
-                this.messages.send(sender, "usage", new String[0]);
+                this.messages.sendUsage(sender);
             }
             return true;
         }
@@ -69,6 +70,9 @@ TabCompleter {
         if (sub.equals("clear") || sub.equals("none") || sub.equals("remove")) {
             return this.handleClear(sender, args);
         }
+        if (sub.equals("modifier") || sub.equals("modifiers") || sub.equals("mod")) {
+            return this.handleModifier(sender, args);
+        }
         if (sub.equals("reload")) {
             return this.handleReload(sender);
         }
@@ -76,13 +80,13 @@ TabCompleter {
             this.messages.send(sender, "unknown-command", new String[0]);
             return true;
         }
-        this.messages.send(sender, "usage", new String[0]);
+        this.messages.sendUsage(sender);
         return true;
     }
 
     private void openMenu(Player player) {
         if (!this.plugin.getPluginSettings().isMenuEnabled()) {
-            this.messages.send((CommandSender)player, "usage", new String[0]);
+            this.messages.sendUsage((CommandSender)player);
             return;
         }
         if (!this.senderHasColorPermission((CommandSender)player)) {
@@ -108,14 +112,14 @@ TabCompleter {
         }
         if (sender instanceof Player) {
             if (args.length < 2) {
-                this.messages.send(sender, "usage", new String[0]);
+                this.messages.sendUsage(sender);
                 return true;
             }
             target = (Player)sender;
             colorArgument = args[1].trim();
         } else {
             if (args.length < 3) {
-                this.messages.send(sender, "usage", new String[0]);
+                this.messages.sendUsage(sender);
                 return true;
             }
             target = this.findPlayer(args[1]);
@@ -132,7 +136,7 @@ TabCompleter {
         ColorCatalog.Entry entry = catalog.find(colorArgument);
         if (entry != null) {
             if (!entry.getPermission().isEmpty() && !sender.hasPermission(entry.getPermission())) {
-                this.messages.send(sender, "no-color-permission", "{color}", entry.getDisplayName());
+                this.messages.send(sender, "no-color-permission", "{color}", io.github.fchatcolor.messages.Messages.translate(entry.getDisplayName()));
                 return true;
             }
             canonical = entry.getValue();
@@ -148,6 +152,15 @@ TabCompleter {
             return true;
         }
         boolean isHex = canonical.startsWith("#");
+        boolean isGradient = GradientColor.isGradient(canonical);
+        if (isGradient && !isHex) {
+            java.util.List<String> palette = GradientColor.parseColors(canonical);
+            isHex = GradientColor.containsHex(palette);
+            if (isHex && !sender.hasPermission("fchatcolor.chat.hex")) {
+                this.messages.send(sender, "no-permission", new String[0]);
+                return true;
+            }
+        }
         ColorMode colorMode = requiredMode = isHex ? ColorMode.HEX : ColorMode.LEGACY;
         if (!settings.isModeEnabled(requiredMode) || !service.supports(requiredMode)) {
             this.messages.send(sender, "mode-disabled", new String[0]);
@@ -155,9 +168,10 @@ TabCompleter {
         }
         try {
             this.plugin.getContext().getStorage().setSelectedColor(target.getUniqueId(), canonical);
+            try { io.github.fchatcolor.api.util.LastMessageCache.setColor(target.getUniqueId(), canonical); } catch (Throwable ignored) {}
         }
         catch (StorageException ex) {
-            this.messages.send(sender, "storage-error", new String[0]);
+            this.plugin.getLogger().warning("Could not save color for " + target.getName() + ": " + ex.getMessage());
             return true;
         }
         if (entry != null) {
@@ -185,7 +199,7 @@ TabCompleter {
             target = (Player)sender;
         } else {
             if (args.length < 2) {
-                this.messages.send(sender, "usage", new String[0]);
+                this.messages.sendUsage(sender);
                 return true;
             }
             target = this.findPlayer(args[1]);
@@ -196,9 +210,10 @@ TabCompleter {
         }
         try {
             this.plugin.getContext().getStorage().clearSelectedColor(target.getUniqueId());
+            try { io.github.fchatcolor.api.util.LastMessageCache.setColor(target.getUniqueId(), null); } catch (Throwable ignored) {}
         }
         catch (StorageException ex) {
-            this.messages.send(sender, "storage-error", new String[0]);
+            this.plugin.getLogger().warning("Could not clear color for " + target.getName() + ": " + ex.getMessage());
             return true;
         }
         if (target.equals((Object)sender)) {
@@ -220,8 +235,144 @@ TabCompleter {
         }
         catch (Throwable t) {
             this.plugin.getLogger().severe("Reload failed: " + t);
-            this.messages.send(sender, "storage-error", new String[0]);
         }
+        return true;
+    }
+
+    private boolean handleModifier(CommandSender sender, String[] args) {
+        if (!sender.hasPermission(PERM_COLOR)) {
+            this.messages.send(sender, "no-permission", new String[0]);
+            return true;
+        }
+        if (args.length < 2 || !args[1].equalsIgnoreCase("set")) {
+            this.messages.sendUsage(sender);
+            return true;
+        }
+        return this.handleModifierSet(sender, args);
+    }
+
+    private boolean handleModifierSet(CommandSender sender, String[] args) {
+        Player target;
+        String modifierArg;
+        if (sender instanceof Player) {
+            if (args.length == 3) {
+                target = (Player) sender;
+                modifierArg = args[2].trim();
+            } else if (args.length == 4) {
+                target = this.findPlayer(args[2]);
+                if (target == null) {
+                    this.messages.send(sender, "player-not-found", "{player}", args[2]);
+                    return true;
+                }
+                modifierArg = args[3].trim();
+            } else {
+                this.messages.sendUsage(sender);
+                return true;
+            }
+        } else {
+            if (args.length == 4) {
+                target = this.findPlayer(args[2]);
+                if (target == null) {
+                    this.messages.send(sender, "player-not-found", "{player}", args[2]);
+                    return true;
+                }
+                modifierArg = args[3].trim();
+            } else {
+                this.messages.sendUsage(sender);
+                return true;
+            }
+        }
+        ColorCatalog catalog = this.plugin.getColors();
+        ColorCatalog.Entry entry = catalog.findModifier(modifierArg);
+        if (entry == null) {
+            // Try canonicalize to give better error
+            String canon = ColorCatalog.canonicalizeModifier(modifierArg);
+            if (canon != null) entry = catalog.findModifierByValue(canon);
+        }
+        if (entry == null) {
+            this.messages.send(sender, "color-invalid", new String[0]);
+            return true;
+        }
+        if (!entry.getPermission().isEmpty() && !sender.hasPermission(entry.getPermission())) {
+            this.messages.send(sender, "no-modifier-permission", "{modifier}", entry.getName());
+            return true;
+        }
+        final Player finalTarget = target;
+        final ColorCatalog.Entry finalEntry = entry;
+        final CommandSender finalSender = sender;
+        // Async toggle
+        Runnable task = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String currentMods = plugin.getContext().getStorage().getSelectedModifiers(finalTarget.getUniqueId());
+                    java.util.Set<String> set = new java.util.HashSet<String>();
+                    if (currentMods != null && !currentMods.trim().isEmpty()) {
+                        String[] parts = currentMods.split(",");
+                        for (String p : parts) {
+                            p = p.trim().toLowerCase(java.util.Locale.ROOT);
+                            if (p.isEmpty()) continue;
+                            String cv = ColorCatalog.canonicalizeModifier(p);
+                            if (cv == null) cv = ColorCatalog.canonicalizeModifier("&" + p);
+                            if (cv == null) continue;
+                            set.add(cv.toLowerCase(java.util.Locale.ROOT));
+                        }
+                    }
+                    String canonEntry = finalEntry.getValue().toLowerCase(java.util.Locale.ROOT);
+                    // Normalize to &x form for comparison
+                    String normCanon = ColorCatalog.canonicalizeModifier(canonEntry);
+                    if (normCanon != null) canonEntry = normCanon.toLowerCase(java.util.Locale.ROOT);
+                    else if (!canonEntry.startsWith("&")) canonEntry = "&" + canonEntry;
+                    boolean wasSelected = set.contains(canonEntry);
+                    if (wasSelected) set.remove(canonEntry);
+                    else set.add(canonEntry);
+                    StringBuilder sb = new StringBuilder();
+                    for (String v : set) {
+                        String cv = ColorCatalog.canonicalizeModifier(v);
+                        if (cv == null) cv = ColorCatalog.canonicalizeModifier("&" + v);
+                        if (cv == null) continue;
+                        String store = cv.startsWith("&") ? cv.substring(1) : cv;
+                        if (sb.length() > 0) sb.append(",");
+                        sb.append(store);
+                    }
+                    String toSave = sb.toString();
+                    if (toSave.isEmpty()) plugin.getContext().getStorage().clearSelectedModifiers(finalTarget.getUniqueId());
+                    else plugin.getContext().getStorage().setSelectedModifiers(finalTarget.getUniqueId(), toSave);
+                    // Send message on main thread via scheduler if available
+                    Runnable sync = new Runnable() {
+                        @Override
+                        public void run() {
+                            String display = finalEntry.getDisplayName();
+                            // Strip tags for preview? Use translate via service if available
+                            try {
+                                ColorService cs = plugin.getContext().getColorService();
+                                if (cs != null) display = cs.translate(display, ColorMode.MINIMESSAGE);
+                                else display = Messages.translate(display);
+                            } catch (Throwable ignored) {
+                                display = finalEntry.getName();
+                            }
+                            if (wasSelected) {
+                                if (finalTarget.equals(finalSender)) messages.send(finalSender, "modifier-removed", "{modifier}", finalEntry.getName(), "{name}", display);
+                                else messages.send(finalSender, "modifier-removed", "{modifier}", finalEntry.getName(), "{name}", display, "{player}", finalTarget.getName());
+                            } else {
+                                if (finalTarget.equals(finalSender)) messages.send(finalSender, "modifier-set", "{modifier}", finalEntry.getName(), "{name}", display);
+                                else messages.send(finalSender, "modifier-set", "{modifier}", finalEntry.getName(), "{name}", display, "{player}", finalTarget.getName());
+                            }
+                        }
+                    };
+                    try {
+                        if (plugin.getScheduler() != null) plugin.getScheduler().runEntity(finalTarget, sync);
+                        else sync.run();
+                    } catch (Throwable t) { sync.run(); }
+                } catch (StorageException ex) {
+                    plugin.getLogger().warning("Could not toggle modifier for " + finalTarget.getName() + ": " + ex.getMessage());
+                } catch (Throwable ex) {
+                    plugin.getLogger().warning("Could not toggle modifier for " + finalTarget.getName() + ": " + ex.getMessage());
+                }
+            }
+        };
+        if (plugin.getScheduler() != null) plugin.getScheduler().runAsync(task);
+        else task.run();
         return true;
     }
 
@@ -256,6 +407,10 @@ TabCompleter {
         if (RainbowColor.isRainbow(canonical)) {
             return RainbowColor.colorize(plain, sender != null && sender.hasPermission("fchatcolor.chat.hex"));
         }
+        if (GradientColor.isGradient(canonical)) {
+            java.util.List<String> palette = GradientColor.parseColors(canonical);
+            if (!palette.isEmpty()) return GradientColor.colorize(plain, palette, sender != null && sender.hasPermission("fchatcolor.chat.hex"));
+        }
         if (canonical.startsWith("#")) {
             return service.translate("&#" + canonical.substring(1) + plain, ColorMode.HEX);
         }
@@ -265,6 +420,10 @@ TabCompleter {
     private String buildPreview(String canonical, ColorService service, CommandSender sender) {
         if (RainbowColor.isRainbow(canonical)) {
             return RainbowColor.colorize(canonical, sender != null && sender.hasPermission("fchatcolor.chat.hex"));
+        }
+        if (GradientColor.isGradient(canonical)) {
+            java.util.List<String> palette = GradientColor.parseColors(canonical);
+            if (!palette.isEmpty()) return GradientColor.colorize(canonical, palette, sender != null && sender.hasPermission("fchatcolor.chat.hex"));
         }
         if (canonical.startsWith("#")) {
             return service.translate("&#" + canonical.substring(1) + canonical, ColorMode.HEX);
@@ -300,6 +459,25 @@ TabCompleter {
         if (args.length == 2 && (sub.equals("set") || sub.equals("color"))) {
             this.addColorSuggestions(sender, args[1], result);
         }
+        if (sub.equals("modifier") || sub.equals("modifiers") || sub.equals("mod")) {
+            if (args.length == 2) {
+                if ("set".startsWith(args[1].toLowerCase(Locale.ROOT))) result.add("set");
+                return result;
+            }
+            if (args.length == 3 && args[1].equalsIgnoreCase("set")) {
+                // Player self: modifier name; console: player name
+                if (sender instanceof Player) {
+                    this.addModifierSuggestions(sender, args[2], result);
+                } else {
+                    this.addOnlinePlayerNames(args[2], result);
+                }
+                return result;
+            }
+            if (args.length == 4 && args[1].equalsIgnoreCase("set")) {
+                this.addModifierSuggestions(sender, args[3], result);
+                return result;
+            }
+        }
         return result;
     }
 
@@ -322,6 +500,15 @@ TabCompleter {
                 if (!hex.toLowerCase(Locale.ROOT).startsWith(prefix)) continue;
                 result.add(hex);
             }
+        }
+    }
+
+    private void addModifierSuggestions(CommandSender sender, String typed, List<String> result) {
+        String prefix = typed.toLowerCase(Locale.ROOT);
+        for (ColorCatalog.Entry entry : this.plugin.getColors().modifierEntries()) {
+            if (!entry.getPermission().isEmpty() && !sender.hasPermission(entry.getPermission())) continue;
+            if (!entry.getName().toLowerCase(Locale.ROOT).startsWith(prefix)) continue;
+            result.add(entry.getName());
         }
     }
 }

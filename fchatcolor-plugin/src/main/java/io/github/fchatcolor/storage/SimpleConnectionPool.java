@@ -142,6 +142,21 @@ public final class SimpleConnectionPool {
             this.openConnections.decrementAndGet();
             connection = this.idle.poll();
         }
+        if (this.config.getType() == DatabaseType.SQLITE) {
+            try {
+                String file = this.url.substring("jdbc:sqlite:".length());
+                if (file != null && !file.startsWith(":memory:") && !file.isEmpty()) {
+                    try (Connection chk = DriverManager.getConnection(this.url, this.properties);
+                         java.sql.Statement s = chk.createStatement()) {
+                        try { s.execute("PRAGMA wal_checkpoint(TRUNCATE)"); } catch (Throwable ignored) {}
+                        try { s.execute("PRAGMA journal_mode=DELETE"); } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {}
+                    try { new java.io.File(file + "-wal").delete(); } catch (Throwable ignored) {}
+                    try { new java.io.File(file + "-shm").delete(); } catch (Throwable ignored) {}
+                    try { new java.io.File(file + "-journal").delete(); } catch (Throwable ignored) {}
+                }
+            } catch (Throwable ignored) {}
+        }
     }
 
     public boolean isClosed() {
@@ -156,10 +171,11 @@ public final class SimpleConnectionPool {
         Connection c = DriverManager.getConnection(this.url, this.properties);
         if (this.config.getType() == DatabaseType.SQLITE) {
             try {
-                c.createStatement().execute("PRAGMA journal_mode=WAL");
-                c.createStatement().execute("PRAGMA synchronous=NORMAL");
-                c.createStatement().execute("PRAGMA temp_store=MEMORY");
-                c.createStatement().execute("PRAGMA cache_size=-64000");
+                try (java.sql.Statement s = c.createStatement()) { s.execute("PRAGMA busy_timeout=5000"); } catch (Throwable ignored) {}
+                try (java.sql.Statement s = c.createStatement()) { s.execute("PRAGMA journal_mode=DELETE"); } catch (Throwable ignored) {}
+                try (java.sql.Statement s = c.createStatement()) { s.execute("PRAGMA synchronous=NORMAL"); } catch (Throwable ignored) {}
+                try (java.sql.Statement s = c.createStatement()) { s.execute("PRAGMA temp_store=MEMORY"); } catch (Throwable ignored) {}
+                try (java.sql.Statement s = c.createStatement()) { s.execute("PRAGMA cache_size=-64000"); } catch (Throwable ignored) {}
             }
             catch (Throwable throwable) {
                 // empty catch block

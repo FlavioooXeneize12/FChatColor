@@ -90,6 +90,18 @@ extends JavaPlugin {
         } else {
             this.getLogger().severe("No chat listener was registered: chat translation will not work.");
         }
+        // En servidores modernos se registra ADEMAS el listener legacy (AsyncPlayerChatEvent compat):
+        // si el plugin de chat externo lee el evento String en vez del Component, tambien lo ve coloreado.
+        try {
+            Class<?> legacyServices = Class.forName("io.github.fchatcolor.legacy.LegacyServices");
+            Object legacyListener = legacyServices.getMethod("createChatListener", io.github.fchatcolor.api.context.PluginContext.class).invoke(null, this.context);
+            if (legacyListener != null && legacyListener != this.chatListener && !legacyListener.getClass().equals(this.chatListener.getClass())) {
+                this.getServer().getPluginManager().registerEvents((Listener) legacyListener, (Plugin)this);
+                this.getLogger().info("Legacy compat chat listener registered alongside modern listener.");
+            }
+        } catch (Throwable t) {
+            this.getLogger().log(Level.FINE, "Legacy compat listener not registered", t);
+        }
         this.getServer().getPluginManager().registerEvents((Listener)new MenuListener(), (Plugin)this);
         try {
             this.getServer().getPluginManager().registerEvents((Listener)new PlayerCacheListener(this.storage, this.context.getScheduler()), (Plugin)this);

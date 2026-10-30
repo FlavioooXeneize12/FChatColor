@@ -23,4 +23,10 @@ public interface PluginSettings {
 
     /** Default chat color for players without a selection or with revoked permission (e.g. "white", "#FFFFFF", "a", "rainbow", or "" for none). */
     String getDefaultColor();
+
+    /** Permission -> color map for per-permission defaults (e.g. "fchatcolor.default-color.red" -> "red"). Insertion order is priority. */
+    java.util.Map<String, String> getDefaultPermissionColors();
+
+    /** Verbose debug logging (chat.debug). Default false. */
+    default boolean isDebug() { return false; }
 }

@@ -10,6 +10,7 @@
  */
 package io.github.fchatcolor.colors;
 
+import io.github.fchatcolor.api.util.GradientColor;
 import io.github.fchatcolor.api.util.HexColor;
 import io.github.fchatcolor.api.util.RainbowColor;
 import java.io.File;
@@ -45,6 +46,8 @@ public final class ColorCatalog {
     private Map<String, Entry> byKey = Collections.emptyMap();
     private Map<String, Entry> byDisplayName = Collections.emptyMap();
     private List<Entry> entries = Collections.emptyList();
+    private Map<String, Entry> modifiersByKey = Collections.emptyMap();
+    private List<Entry> modifierEntries = Collections.emptyList();
 
     public ColorCatalog(File file, Logger logger) {
         this.file = file;
@@ -68,16 +71,30 @@ public final class ColorCatalog {
                 String name = key.trim();
                 String permission = color.getString("permission", "").trim();
                 String rawValue = color.getString("value", "").trim();
-                String displayName = color.getString("name", "").trim();
-                String material = color.getString("material", "").trim();
-                String texture = color.getString("texture", "").trim();
-                if (displayName.isEmpty()) {
+                if (color.isList("value")) {
+                    java.util.List<String> rawList = color.getStringList("value");
+                    String encoded = GradientColor.encode(rawList);
+                    if (encoded == null) {
+                        this.logger.warning("colors.yml: color '" + name + "' has an invalid value list (use #RRGGBB or legacy codes such as &c, at least 2 entries); skipped.");
+                        continue;
+                    }
+                    rawValue = encoded;
+                }
+                String rawName = color.getString("name", null);
+                String displayName = rawName == null ? "" : rawName;
+                // Preserve intentional spaces (e.g. "&#63FF61&m          " decorative line)
+                // Only fallback to key when the name is effectively empty (no visible chars)
+                if (displayName.trim().isEmpty()) {
                     displayName = name;
                 }
+                String material = color.getString("material", "").trim();
+                String texture = color.getString("texture", "").trim();
                 if ((canonical = ColorCatalog.canonicalize(rawValue)) == null) {
                     this.logger.warning("colors.yml: color '" + name + "' has an invalid value '" + rawValue + "' (use #RRGGBB or a legacy code such as &c); skipped.");
                     continue;
                 }
+                // Gradient entries: <rainbow> and {value} in the name render with the palette itself
+                displayName = GradientColor.resolveDisplayName(displayName, canonical);
                 Entry entry = new Entry(name, displayName, permission, canonical, material, texture);
                 list.add(entry);
                 index.put(name.toLowerCase(Locale.ROOT), entry);
@@ -90,6 +107,36 @@ public final class ColorCatalog {
         this.entries = Collections.unmodifiableList(list);
         this.byKey = Collections.unmodifiableMap(index);
         this.byDisplayName = Collections.unmodifiableMap(displayIndex);
+
+        // Load modifiers (bold, italic, etc.)
+        ConfigurationSection modSection = yaml.getConfigurationSection("modifiers");
+        LinkedHashMap<String, Entry> modIndex = new LinkedHashMap<String, Entry>();
+        ArrayList<Entry> modList = new ArrayList<Entry>();
+        if (modSection != null) {
+            for (String key : modSection.getKeys(false)) {
+                ConfigurationSection mod = modSection.getConfigurationSection(key);
+                if (mod == null) continue;
+                String name = key.trim();
+                String permission = mod.getString("permission", "").trim();
+                String rawValue = mod.getString("value", "").trim();
+                String rawModName = mod.getString("name", null);
+                String displayName = rawModName == null ? "" : rawModName;
+                if (displayName.trim().isEmpty()) displayName = name;
+                String material = mod.getString("material", "").trim();
+                String texture = mod.getString("texture", "").trim();
+                String canonical = canonicalizeModifier(rawValue);
+                if (canonical == null) {
+                    this.logger.warning("colors.yml: modifier '" + name + "' has an invalid value '" + rawValue + "' (use &l, &m, &n, &o, etc.); skipped.");
+                    continue;
+                }
+                Entry entry = new Entry(name, displayName, permission, canonical, material, texture);
+                modList.add(entry);
+                modIndex.put(name.toLowerCase(Locale.ROOT), entry);
+                modIndex.put(separatorsRemoved(name), entry);
+            }
+        }
+        this.modifierEntries = Collections.unmodifiableList(modList);
+        this.modifiersByKey = Collections.unmodifiableMap(modIndex);
     }
 
     public Entry find(String input) {
@@ -131,6 +178,49 @@ public final class ColorCatalog {
         return names;
     }
 
+    public Collection<Entry> modifierEntries() {
+        return this.modifierEntries;
+    }
+
+    public Map<String, Entry> modifiersByKey() {
+        return this.modifiersByKey;
+    }
+
+    public Entry findModifier(String input) {
+        if (input == null || input.isEmpty()) return null;
+        String trimmed = input.trim();
+        Entry found = this.modifiersByKey.get(trimmed.toLowerCase(Locale.ROOT));
+        if (found == null) found = this.modifiersByKey.get(ColorCatalog.separatorsRemoved(trimmed));
+        if (found != null) return found;
+        // Try by value
+        return findModifierByValue(trimmed);
+    }
+
+    public Entry findModifierByValue(String value) {
+        if (value == null || value.isEmpty()) return null;
+        String canon = canonicalizeModifier(value);
+        if (canon == null) canon = value.trim().toLowerCase(Locale.ROOT);
+        for (Entry entry : this.modifierEntries) {
+            if (entry.getValue().equalsIgnoreCase(canon)) return entry;
+            if (ColorCatalog.normalizeValue(entry.getValue()).equals(ColorCatalog.normalizeValue(canon))) return entry;
+        }
+        return null;
+    }
+
+    public static String canonicalizeModifier(String value) {
+        if (value == null || value.isEmpty()) return null;
+        String clean = value.trim();
+        if (clean.startsWith("&") || clean.startsWith("\u00a7")) {
+            clean = clean.substring(1);
+        }
+        if (clean.length() != 1) return null;
+        char c = Character.toLowerCase(clean.charAt(0));
+        if (c == 'l' || c == 'm' || c == 'n' || c == 'o' || c == 'k' || c == 'r') {
+            return "&" + c;
+        }
+        return null;
+    }
+
     public void registerPermissions(PluginManager pluginManager) {
         LinkedHashMap<String, Boolean> children = new LinkedHashMap<String, Boolean>();
         for (Entry entry : this.entries) {
@@ -140,14 +230,36 @@ public final class ColorCatalog {
             if (pluginManager.getPermission(node) != null) continue;
             pluginManager.addPermission(new Permission(node, "Allows using the '" + entry.getName() + "' chat color", PermissionDefault.OP));
         }
+        for (Entry entry : this.modifierEntries) {
+            String node = entry.getPermission();
+            if (node == null || node.isEmpty()) continue;
+            children.put(node, Boolean.TRUE);
+            if (pluginManager.getPermission(node) != null) continue;
+            pluginManager.addPermission(new Permission(node, "Allows using the '" + entry.getName() + "' chat modifier", PermissionDefault.OP));
+        }
         if (pluginManager.getPermission(WILDCARD_PERMISSION) == null && !children.isEmpty()) {
             pluginManager.addPermission(new Permission(WILDCARD_PERMISSION, "Allows using every FChatColor color", PermissionDefault.OP, children));
+        }
+        String wildcardMod = "fchatcolor.color.modifiers.*";
+        if (pluginManager.getPermission(wildcardMod) == null) {
+            LinkedHashMap<String, Boolean> modChildren = new LinkedHashMap<String, Boolean>();
+            for (Entry e : this.modifierEntries) {
+                if (e.getPermission() != null && !e.getPermission().isEmpty()) modChildren.put(e.getPermission(), Boolean.TRUE);
+            }
+            if (!modChildren.isEmpty()) {
+                pluginManager.addPermission(new Permission(wildcardMod, "Allows using every FChatColor modifier", PermissionDefault.OP, modChildren));
+            }
         }
     }
 
     private static String canonicalize(String value) {
         if (value == null || value.isEmpty()) {
             return null;
+        }
+        if (GradientColor.isGradient(value)) {
+            java.util.List<String> colors = GradientColor.parseColors(value);
+            if (colors.isEmpty()) return null;
+            return GradientColor.encode(colors);
         }
         Integer rgb = HexColor.parseRgb(value);
         if (rgb != null) {
@@ -270,6 +382,10 @@ public final class ColorCatalog {
 
         public boolean isHex() {
             return this.value.startsWith("#");
+        }
+
+        public boolean isGradient() {
+            return GradientColor.isGradient(this.value);
         }
 
         public String getMaterial() {
